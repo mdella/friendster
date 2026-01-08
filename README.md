@@ -51,7 +51,7 @@ MQTT functionality:
 - Connection to MQTT broker
 - Message callback handling
 - Button press event publishing
-- Ring command handlers (placeholders for implementation)
+- Ring command handlers for LED control
 
 ### wifi_manager.py
 WiFi connection management:
@@ -107,19 +107,6 @@ ring.set_pulse_color('blue')
 ring.set_pulse_range(10, 255)
 ```
 
-### Implementing MQTT Commands
-
-The placeholder functions in `mqtt_handler.py` can be implemented to control the LED ring:
-
-```python
-def ring_chase(color):
-    """Ring chase animation with specified color"""
-    # Access the global ring object
-    global ring
-    ring.set_mode('chase')
-    ring.set_chase_color(color)
-```
-
 ### Adding Custom Button Actions
 
 Modify the button handler functions in `mqtt_handler.py`:
@@ -150,6 +137,98 @@ def button_long_press(client, config):
 - **Button Control**: Local control with short/long/very-long press detection
 - **Retry Logic**: Automatic WiFi reconnection attempts
 - **Heartbeat**: Regular status messages via MQTT
+
+## MQTT Topics
+
+All topics are prefixed with the base topic configured during setup (default: `esp32/test`).
+
+### Subscribed Topics (Commands)
+
+| Topic | Description | Payload |
+|-------|-------------|---------|
+| `{topic}/ring/chase` | Chase animation | Color string or JSON |
+| `{topic}/ring/static` | Solid color | Color string or JSON |
+| `{topic}/ring/flash` | Flashing animation | Color string or JSON |
+| `{topic}/ring/comet` | Comet with tail | Color string or JSON |
+| `{topic}/ring/spinner` | Multi-arm spinner | Color string or JSON |
+| `{topic}/ring/rainbow` | Rainbow cycle | Empty or JSON |
+| `{topic}/ring/pulse` | Pulsing brightness | Color string or JSON |
+| `{topic}/ring/reset` | Reset to default | (none) |
+
+### Published Topics (Events)
+
+| Topic | Description | Payload |
+|-------|-------------|---------|
+| `{topic}/heartbeat` | Status every 60s | `{"device": "...", "status": "alive", "uptime": 123}` |
+| `{topic}/button/1` | Short press | `{"device": "...", "button": "1", "uptime": 123}` |
+| `{topic}/button/2` | Long press | `{"device": "...", "button": "2", "uptime": 123}` |
+| `{topic}/button/3` | Very long press | `{"device": "...", "button": "3", "uptime": 123}` |
+
+### Command Payload Formats
+
+Commands accept either a simple color string or a JSON object with options.
+
+**Simple format** - just the color name:
+```
+red
+```
+
+**JSON format** - with optional settings:
+```json
+{"color": "red", "speed": 30, "brightness": 100, "direction": "cw"}
+```
+
+### Payload Options
+
+| Option | Description | Values |
+|--------|-------------|--------|
+| `color` | Color name | See available colors below |
+| `speed` | Animation speed (ms) | 10-1000 (lower = faster) |
+| `brightness` | LED brightness | 0-255 |
+| `direction` | Rotation direction | `cw`, `ccw`, `reverse` |
+
+### Mode-Specific Options
+
+**spinner** - supports multiple arm colors:
+```json
+{"colors": ["red", "green", "blue"], "speed": 30}
+```
+
+**pulse** - supports brightness range and step:
+```json
+{"color": "blue", "min": 10, "max": 255, "step": 5}
+```
+
+**rainbow** - no color needed, just optional speed/brightness:
+```json
+{"speed": 50, "brightness": 100}
+```
+
+### Available Colors
+
+`red`, `green`, `blue`, `white`, `black`, `yellow`, `cyan`, `magenta`, `orange`, `purple`, `pink`, `lime`, `teal`, `lavender`, `brown`, `maroon`, `olive`, `navy`, `aqua`, `coral`, `gold`, `silver`, `gray`, `indigo`
+
+### Example Commands
+
+```bash
+# Simple color
+mosquitto_pub -t "esp32/test/ring/chase" -m "red"
+
+# JSON with options
+mosquitto_pub -t "esp32/test/ring/comet" -m '{"color": "purple", "speed": 40, "direction": "ccw"}'
+
+# Spinner with multiple colors
+mosquitto_pub -t "esp32/test/ring/spinner" -m '{"colors": ["red", "green", "blue"]}'
+
+# Pulse with range
+mosquitto_pub -t "esp32/test/ring/pulse" -m '{"color": "cyan", "min": 20, "max": 200, "step": 3}'
+
+# Rainbow
+mosquitto_pub -t "esp32/test/ring/rainbow" -m '{"speed": 30}'
+
+# Reset to default
+mosquitto_pub -t "esp32/test/ring/reset" -m ""
+```
 
 ## Troubleshooting
 

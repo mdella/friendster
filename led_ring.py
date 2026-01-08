@@ -322,25 +322,9 @@ class LEDRing:
                     self.rainbow_cycle()
                 case 'solid':
                     self.solid()
-                case _: 
+                case _:
+                    pass
 
-            """
-            if self.mode == 'solid':
-                self.solid()
-            elif self.mode == 'flash':
-                self.flashing()
-            elif self.mode == 'pulse':
-                self.pulse()
-            elif self.mode == 'chase':
-                self.chase()
-            elif self.mode == 'comet':
-                self.comet()
-            elif self.mode == 'spinner':
-                self.spinner()
-            elif self.mode == 'rainbow_cycle':
-                self.rainbow_cycle()
-            """
-            
             # Move to next position for rotating animations
             if self.mode in ['chase', 'comet', 'spinner']:
                 self.position = (self.position + self.direction) % self.num_leds

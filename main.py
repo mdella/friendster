@@ -18,8 +18,9 @@ from button_handler import (
 )
 from config_manager import load_config, load_mqtt_config
 from mqtt_handler import (
-    connect_to_mqtt, 
-    mqtt_callback
+    connect_to_mqtt,
+    mqtt_callback,
+    set_ring
 )
 from wifi_manager import connect_to_wifi, start_ap_mode
 from web_server import (
@@ -40,10 +41,13 @@ def main():
     ring = LEDRing(pin=8, num_leds=24)
     ring.set_update_interval(30)
     ring.set_brightness(50)
-    
+
     # Set initial direction
     ring.set_direction('cw')  # or 'ccw', 1, -1, 'reverse'
-    
+
+    # Pass ring reference to mqtt_handler for command handling
+    set_ring(ring)
+
     ring.clear()
     
     if config:
@@ -85,6 +89,9 @@ def main():
                     f'{base_topic}/ring/static',
                     f'{base_topic}/ring/flash',
                     f'{base_topic}/ring/comet',
+                    f'{base_topic}/ring/spinner',
+                    f'{base_topic}/ring/rainbow',
+                    f'{base_topic}/ring/pulse',
                     f'{base_topic}/ring/reset',
                     f'{base_topic}/command',
                     f'{base_topic}/button/#'

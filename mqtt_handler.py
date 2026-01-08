@@ -12,6 +12,15 @@ from constants import MQTT_CLIENT_ID, MQTT_KEEPALIVE
 # Module-level variables (to be set by main)
 mqtt_client = None
 mqtt_config = None
+ring = None
+
+
+def set_ring(ring_instance):
+    """Set the ring reference for command handlers.
+    Call this from main.py after creating the LEDRing instance.
+    """
+    global ring
+    ring = ring_instance
 
 
 def connect_to_mqtt(config):
@@ -69,18 +78,25 @@ def mqtt_callback(topic, msg):
             
             # Handle ring commands with color data
             if 'ring' in topic_str:
-                if command == 'chase':
-                    ring_chase(msg_str)
-                elif command == 'static':
-                    ring_static(msg_str)
-                elif command == 'flash':
-                    ring_flash(msg_str)
-                elif command == 'comet':
-                    ring_comet(msg_str)
-                elif command == 'reset':
-                    ring_reset()
-                else:
-                    print(f'Unknown ring command: {command}')
+                match command:
+                    case 'chase':
+                        ring_chase(msg_str)
+                    case 'static':
+                        ring_static(msg_str)
+                    case 'flash':
+                        ring_flash(msg_str)
+                    case 'comet':
+                        ring_comet(msg_str)
+                    case 'spinner':
+                        ring_spinner(msg_str)
+                    case 'rainbow':
+                        ring_rainbow(msg_str)
+                    case 'pulse':
+                        ring_pulse(msg_str)
+                    case 'reset':
+                        ring_reset()
+                    case _:
+                        print(f'Unknown ring command: {command}')
     except Exception as e:
         print(f'MQTT callback error: {e}')
 
@@ -101,39 +117,229 @@ def mqtt_publish_button_press(button_type, client, config):
     print(f'Button press sent: {time.ticks_ms()}')
 
 
-# Ring command handlers (placeholder implementations)
-def ring_chase(color):
-    """Ring chase animation with specified color"""
-    print(f'[RING CHASE] Starting chase animation with color: {color}')
-    print(f'[RING CHASE] Animation would cycle LEDs in sequence')
-    # TODO: Implement your LED ring chase animation here
+# Ring command handlers
+def _parse_command_payload(payload):
+    """Parse MQTT payload - supports JSON or plain color string.
+
+    JSON format: {"color": "red", "speed": 30, "brightness": 100, "direction": "cw"}
+    Plain format: "red" (just the color name)
+
+    Returns dict with parsed values and defaults.
+    """
+    defaults = {
+        'color': 'white',
+        'speed': None,
+        'brightness': None,
+        'direction': None
+    }
+
+    payload = payload.strip()
+
+    # Try JSON first
+    if payload.startswith('{'):
+        try:
+            data = json.loads(payload)
+            return {
+                'color': data.get('color', defaults['color']),
+                'speed': data.get('speed', defaults['speed']),
+                'brightness': data.get('brightness', defaults['brightness']),
+                'direction': data.get('direction', defaults['direction'])
+            }
+        except:
+            pass
+
+    # Plain color string
+    if payload:
+        defaults['color'] = payload
+
+    return defaults
 
 
-def ring_static(color):
-    """Ring static color display"""
-    print(f'[RING STATIC] Setting static color: {color}')
-    print(f'[RING STATIC] All LEDs would display this color continuously')
-    # TODO: Implement your LED ring static color display here
+def _apply_common_settings(params):
+    """Apply common settings (speed, brightness, direction) if provided."""
+    global ring
+    if ring is None:
+        return
+
+    if params['speed'] is not None:
+        ring.set_update_interval(params['speed'])
+
+    if params['brightness'] is not None:
+        ring.set_brightness(params['brightness'])
+
+    if params['direction'] is not None:
+        ring.set_direction(params['direction'])
 
 
-def ring_flash(color):
-    """Ring flash animation with specified color"""
-    print(f'[RING FLASH] Starting flash animation with color: {color}')
-    print(f'[RING FLASH] LEDs would flash on/off repeatedly')
-    # TODO: Implement your LED ring flash animation here
+def ring_chase(payload):
+    """Ring chase animation with specified color.
+
+    Payload: "red" or {"color": "red", "speed": 30, "brightness": 100}
+    """
+    global ring
+    if ring is None:
+        print('[RING CHASE] Error: ring not initialized')
+        return
+
+    params = _parse_command_payload(payload)
+    print(f'[RING CHASE] Starting chase animation with color: {params["color"]}')
+
+    _apply_common_settings(params)
+    ring.set_chase_color(params['color'])
+    ring.set_mode('chase')
 
 
-def ring_comet(color):
-    """Ring comet animation with specified color"""
-    print(f'[RING COMET] Starting comet animation with color: {color}')
-    print(f'[RING COMET] A trailing comet effect would move around the ring')
-    # TODO: Implement your LED ring comet animation here
+def ring_static(payload):
+    """Ring static color display.
+
+    Payload: "blue" or {"color": "blue", "brightness": 50}
+    """
+    global ring
+    if ring is None:
+        print('[RING STATIC] Error: ring not initialized')
+        return
+
+    params = _parse_command_payload(payload)
+    print(f'[RING STATIC] Setting static color: {params["color"]}')
+
+    _apply_common_settings(params)
+    ring.set_solid_color(params['color'])
+    ring.set_mode('solid')
+
+
+def ring_flash(payload):
+    """Ring flash animation with specified color.
+
+    Payload: "yellow" or {"color": "yellow", "speed": 200}
+    """
+    global ring
+    if ring is None:
+        print('[RING FLASH] Error: ring not initialized')
+        return
+
+    params = _parse_command_payload(payload)
+    print(f'[RING FLASH] Starting flash animation with color: {params["color"]}')
+
+    _apply_common_settings(params)
+    ring.set_flash_color(params['color'])
+    ring.set_mode('flash')
+
+
+def ring_comet(payload):
+    """Ring comet animation with specified color.
+
+    Payload: "purple" or {"color": "purple", "speed": 40, "direction": "ccw"}
+    """
+    global ring
+    if ring is None:
+        print('[RING COMET] Error: ring not initialized')
+        return
+
+    params = _parse_command_payload(payload)
+    print(f'[RING COMET] Starting comet animation with color: {params["color"]}')
+
+    _apply_common_settings(params)
+    ring.set_comet_color(params['color'])
+    ring.set_mode('comet')
 
 
 def ring_reset():
-    """Reset ring to default state (off or default color)"""
-    print(f'[RING RESET] Resetting ring to default state')
-    print(f'[RING RESET] All LEDs would turn off or return to default')
-    # TODO: Implement your LED ring reset here
+    """Reset ring to default state (green chase animation)."""
+    global ring
+    if ring is None:
+        print('[RING RESET] Error: ring not initialized')
+        return
+
+    print('[RING RESET] Resetting ring to default state')
+    ring.set_brightness(50)
+    ring.set_update_interval(30)
+    ring.set_direction('cw')
+    ring.set_chase_color('green')
+    ring.set_mode('chase')
+
+
+def ring_spinner(payload):
+    """Ring spinner animation with multiple colored arms.
+
+    Payload: "red" (single color for all arms)
+             or {"colors": ["red", "green", "blue"], "speed": 30}
+    """
+    global ring
+    if ring is None:
+        print('[RING SPINNER] Error: ring not initialized')
+        return
+
+    params = _parse_command_payload(payload)
+
+    # Check for colors array in JSON payload
+    payload = payload.strip()
+    colors = None
+    if payload.startswith('{'):
+        try:
+            data = json.loads(payload)
+            if 'colors' in data:
+                colors = data['colors']
+        except:
+            pass
+
+    if colors:
+        print(f'[RING SPINNER] Starting spinner with colors: {colors}')
+        ring.set_spinner_colors(colors)
+    else:
+        # Use single color for all 3 arms
+        color = params['color']
+        print(f'[RING SPINNER] Starting spinner with color: {color}')
+        ring.set_spinner_colors([color, color, color])
+
+    _apply_common_settings(params)
+    ring.set_mode('spinner')
+
+
+def ring_rainbow(payload):
+    """Ring rainbow cycle animation.
+
+    Payload: "" (empty) or {"speed": 50, "brightness": 100}
+    """
+    global ring
+    if ring is None:
+        print('[RING RAINBOW] Error: ring not initialized')
+        return
+
+    print('[RING RAINBOW] Starting rainbow cycle animation')
+    params = _parse_command_payload(payload)
+    _apply_common_settings(params)
+    ring.set_mode('rainbow_cycle')
+
+
+def ring_pulse(payload):
+    """Ring pulse animation - all LEDs pulse between min and max brightness.
+
+    Payload: "blue" or {"color": "blue", "min": 10, "max": 255, "step": 5}
+    """
+    global ring
+    if ring is None:
+        print('[RING PULSE] Error: ring not initialized')
+        return
+
+    params = _parse_command_payload(payload)
+    print(f'[RING PULSE] Starting pulse animation with color: {params["color"]}')
+
+    # Parse pulse-specific settings from JSON
+    payload = payload.strip()
+    if payload.startswith('{'):
+        try:
+            data = json.loads(payload)
+            if 'min' in data or 'max' in data:
+                min_val = data.get('min', 10)
+                max_val = data.get('max', 255)
+                ring.set_pulse_range(min_val, max_val)
+            if 'step' in data:
+                ring.set_pulse_step(data['step'])
+        except:
+            pass
+
+    _apply_common_settings(params)
+    ring.set_pulse_color(params['color'])
+    ring.set_mode('pulse')
 
 
