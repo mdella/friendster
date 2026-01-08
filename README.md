@@ -11,6 +11,7 @@ This is a refactored, modular version of the Friendster ESP32 application. The c
 ├── button_handler.py    # Button input with debouncing
 ├── config_manager.py    # Configuration file loading/saving
 ├── mqtt_handler.py      # MQTT connection and messaging
+├── ota_handler.py       # Over-the-air update management
 ├── wifi_manager.py      # WiFi connection and AP mode
 └── web_server.py        # Captive portal and web configuration
 ```
@@ -52,6 +53,13 @@ MQTT functionality:
 - Message callback handling
 - Button press event publishing
 - Ring command handlers for LED control
+
+### ota_handler.py
+Over-the-air update management:
+- `init_ota()` - Initialize OTA and check for updates on boot
+- `periodic_check()` - Check for updates at randomized intervals (22-26 hours)
+- `check_for_updates()` - Fetch and compare versions from server
+- `apply_update()` - Download files and restart device
 
 ### wifi_manager.py
 WiFi connection management:
@@ -134,6 +142,7 @@ def button_long_press(client, config):
 - **Non-blocking**: LED animations and button checks don't block main loop
 - **Captive Portal**: Easy WiFi configuration through web interface
 - **MQTT Support**: Remote control and monitoring
+- **OTA Updates**: Over-the-air firmware updates with randomized check intervals
 - **Button Control**: Local control with short/long/very-long press detection
 - **Retry Logic**: Automatic WiFi reconnection attempts
 - **Heartbeat**: Regular status messages via MQTT
@@ -230,6 +239,82 @@ mosquitto_pub -t "esp32/test/ring/rainbow" -m '{"speed": 30}'
 mosquitto_pub -t "esp32/test/ring/reset" -m ""
 ```
 
+## OTA Updates
+
+The device supports over-the-air firmware updates from an HTTP server.
+
+### Configuring OTA
+
+OTA can be configured through the web portal during initial setup, or by editing `ota_config.json`:
+
+```json
+{
+  "enabled": true,
+  "server_url": "http://your-server.com/firmware",
+  "check_on_boot": true,
+  "auto_update": true
+}
+```
+
+| Setting | Description |
+|---------|-------------|
+| `enabled` | Enable/disable OTA updates |
+| `server_url` | Base URL where firmware files are hosted |
+| `check_on_boot` | Check for updates when device starts |
+| `auto_update` | Automatically apply updates when found |
+
+### Server Setup
+
+Host a `manifest.json` file on your server with the current version and list of files:
+
+```json
+{
+  "version": "1.0.1",
+  "files": [
+    "main.py",
+    "led_ring.py",
+    "mqtt_handler.py",
+    "ota_handler.py"
+  ]
+}
+```
+
+**Server directory structure:**
+```
+/firmware/
+├── manifest.json
+├── main.py
+├── led_ring.py
+├── mqtt_handler.py
+└── ota_handler.py
+```
+
+### Update Process
+
+1. Device fetches `manifest.json` from `{server_url}/manifest.json`
+2. Compares server version with local version in `ota_version.json`
+3. If newer version available, downloads each file listed in manifest
+4. Saves new version info and restarts device
+
+### Check Timing
+
+- **On boot**: Checks immediately if `check_on_boot` is enabled
+- **Periodic**: Checks every 22-26 hours (randomized interval)
+
+The randomized interval prevents thousands of devices from checking simultaneously and overwhelming the server.
+
+### Manual Version Management
+
+To set the initial version on a new device, create `ota_version.json`:
+
+```json
+{
+  "version": "1.0.0",
+  "files": ["main.py", "led_ring.py"],
+  "updated_at": 1704470400
+}
+```
+
 ## Troubleshooting
 
 ### WiFi Connection Issues
@@ -251,6 +336,13 @@ mosquitto_pub -t "esp32/test/ring/reset" -m ""
 - Verify GPIO pin 5 connection
 - Check pull-up resistor configuration
 - Review button press duration thresholds in `constants.py`
+
+### OTA Update Issues
+- Verify server URL is accessible from device network
+- Check that `manifest.json` is valid JSON
+- Ensure all files listed in manifest exist on server
+- Verify version in manifest is higher than local version
+- Check device has sufficient memory for downloads
 
 ## Customization
 
