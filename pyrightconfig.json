@@ -1,0 +1,11 @@
+{
+  "include": ["*.py"],
+  "exclude": ["__pycache__"],
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.11",
+  "reportMissingModuleSource": false,
+  "extraPaths": [
+    "/Users/mdella/.pyenv/versions/3.13.5/lib/python3.13/site-packages"
+  ],
+  "stubPath": "/Users/mdella/.pyenv/versions/3.13.5/lib/python3.13/site-packages"
+}
