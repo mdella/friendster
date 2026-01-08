@@ -38,6 +38,7 @@ No automated test framework. Debug via:
 | `button_handler.py` | Debounced button input with short/long/very-long press detection |
 | `config_manager.py` | JSON persistence layer for WiFi and MQTT configs |
 | `mqtt_handler.py` | MQTT client, callbacks, and LED ring command handlers |
+| `ota_handler.py` | OTA updates - checks on boot and every 22-26 hours (randomized) |
 | `wifi_manager.py` | WiFi STA connection and AP mode for setup |
 | `web_server.py` | HTTP server + DNS for captive portal configuration |
 
@@ -51,7 +52,7 @@ No automated test framework. Debug via:
 
 ### Application Flow
 
-**Normal operation:** Load WiFi config → Connect (3 retries) → Load MQTT config → Connect to broker → Main loop (LED updates, button checks, MQTT polling, 60s heartbeat)
+**Normal operation:** Load WiFi config → Connect (3 retries) → OTA check on boot → Load MQTT config → Connect to broker → Main loop (LED updates, button checks, MQTT polling, 60s heartbeat, OTA periodic check)
 
 **Setup mode (no WiFi config or connection fails):** Start AP mode ("ESP32-Setup" / "12345678") → Cyan chase animation → DNS + HTTP servers → Serve captive portal → Save config on form submit → Reset
 
@@ -74,3 +75,17 @@ No automated test framework. Debug via:
 - JSON: `{"color": "red", "speed": 30, "brightness": 100, "direction": "cw"}`
 - Spinner: `{"colors": ["red", "green", "blue"]}`
 - Pulse: `{"color": "blue", "min": 10, "max": 255, "step": 5}`
+
+## OTA Updates
+
+OTA is configured via `ota_config.json`:
+```json
+{"enabled": true, "server_url": "http://example.com/firmware", "check_on_boot": true, "auto_update": true}
+```
+
+**Server manifest format** (`manifest.json`):
+```json
+{"version": "1.0.0", "files": ["main.py", "led_ring.py", "mqtt_handler.py"]}
+```
+
+**Check timing:** Randomized 22-26 hour interval to prevent server load spikes from many devices.

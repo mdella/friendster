@@ -22,13 +22,14 @@ from mqtt_handler import (
     mqtt_callback,
     set_ring
 )
-from wifi_manager import connect_to_wifi, start_ap_mode
+from wifi_manager import connect_to_wifi, start_ap_mode, is_wifi_connected
 from web_server import (
     setup_dns_server,
     handle_dns_request,
     setup_web_server,
     handle_web_request
 )
+from ota_handler import init_ota, periodic_check
 
 
 def main():
@@ -73,7 +74,10 @@ def main():
             print('Device is online!')
             ring.set_mode('chase')
             ring.set_chase_color('green')
-        
+
+            # Initialize OTA and check for updates on boot
+            init_ota(ring)
+
             # Load MQTT configuration and connect
             mqtt_config = load_mqtt_config()
             mqtt_client = connect_to_mqtt(mqtt_config)
@@ -108,7 +112,13 @@ def main():
                 print('Running main loop...')
                 last_heartbeat = time.ticks_ms()
                 heartbeat_interval = 60000  # 60 seconds in milliseconds
-                
+
+                # WiFi monitoring state
+                last_wifi_check = time.ticks_ms()
+                wifi_check_interval = 5000  # Check WiFi every 5 seconds
+                wifi_was_connected = True
+                saved_ring_state = None
+
                 while True:
                     try:
                         # Update LEDs (non-blocking)
@@ -139,7 +149,33 @@ def main():
                             mqtt_client.publish(mqtt_config['topic'] + '/heartbeat', heartbeat_msg)
                             print('Heartbeat sent:', time.ticks_ms())
                             last_heartbeat = current_time
-                        
+
+                        # Check WiFi connection status periodically
+                        if time.ticks_diff(current_time, last_wifi_check) >= wifi_check_interval:
+                            last_wifi_check = current_time
+                            wifi_connected = is_wifi_connected()
+
+                            if wifi_was_connected and not wifi_connected:
+                                # WiFi just lost - save state and switch to yellow pulse
+                                print('WiFi connection lost!')
+                                saved_ring_state = ring.save_state()
+                                ring.set_mode('pulse')
+                                ring.set_pulse_color('yellow')
+                                ring.set_pulse_range(20, 200)
+                                ring.set_pulse_step(5)
+                                wifi_was_connected = False
+
+                            elif not wifi_was_connected and wifi_connected:
+                                # WiFi restored - restore previous state
+                                print('WiFi connection restored!')
+                                if saved_ring_state:
+                                    ring.restore_state(saved_ring_state)
+                                    saved_ring_state = None
+                                wifi_was_connected = True
+
+                        # Periodic OTA update check (22-26 hours random interval)
+                        periodic_check()
+
                         # Small delay to prevent tight loop
                         time.sleep_ms(50)
                         

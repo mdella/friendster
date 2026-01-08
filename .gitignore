@@ -1,4 +1,6 @@
 /.DS_Store
 /mqtt_config.json
 /wifi_config.json
+/ota_config.json
+/ota_version.json
 __pycache__/

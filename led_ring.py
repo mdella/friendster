@@ -335,7 +335,47 @@ class LEDRing:
     def pause(self):
         """Pause animation"""
         self.active = False
-        
+
     def resume(self):
         """Resume animation"""
         self.active = True
+
+    def save_state(self):
+        """Save current ring state for later restoration.
+        Returns a dict containing all state needed to restore the ring.
+        """
+        return {
+            'mode': self.mode,
+            'direction': self.direction,
+            'brightness': self.brightness,
+            'update_interval': self.update_interval,
+            'chase_color': self.chase_color,
+            'comet_color': self.comet_color,
+            'spinner_colors': self.spinner_colors.copy(),
+            'solid_color': self.solid_color,
+            'flash_color': self.flash_color,
+            'pulse_color': self.pulse_color,
+            'pulse_min_brightness': self.pulse_min_brightness,
+            'pulse_max_brightness': self.pulse_max_brightness,
+            'pulse_step': self.pulse_step,
+        }
+
+    def restore_state(self, state):
+        """Restore ring state from a previously saved state dict."""
+        if not state:
+            return
+        self.mode = state.get('mode', self.mode)
+        self.direction = state.get('direction', self.direction)
+        self.brightness = state.get('brightness', self.brightness)
+        self.update_interval = state.get('update_interval', self.update_interval)
+        self.chase_color = state.get('chase_color', self.chase_color)
+        self.comet_color = state.get('comet_color', self.comet_color)
+        self.spinner_colors = state.get('spinner_colors', self.spinner_colors)
+        self.solid_color = state.get('solid_color', self.solid_color)
+        self.flash_color = state.get('flash_color', self.flash_color)
+        self.pulse_color = state.get('pulse_color', self.pulse_color)
+        self.pulse_min_brightness = state.get('pulse_min_brightness', self.pulse_min_brightness)
+        self.pulse_max_brightness = state.get('pulse_max_brightness', self.pulse_max_brightness)
+        self.pulse_step = state.get('pulse_step', self.pulse_step)
+        # Reset position for clean animation restart
+        self.position = 0

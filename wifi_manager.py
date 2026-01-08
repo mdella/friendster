@@ -7,6 +7,12 @@ import network
 import time
 
 
+def is_wifi_connected():
+    """Check if WiFi is currently connected"""
+    sta = network.WLAN(network.STA_IF)
+    return sta.active() and sta.isconnected()
+
+
 def connect_to_wifi(ssid, password):
     """Connect to WiFi network"""
     sta = network.WLAN(network.STA_IF)
