@@ -4,6 +4,9 @@ Constants and configuration values shared across modules
 
 import machine
 
+# Firmware version
+VERSION = '1.0.0'
+
 # Configuration file paths
 CONFIG_FILE = 'wifi_config.json'
 MQTT_CONFIG_FILE = 'mqtt_config.json'
