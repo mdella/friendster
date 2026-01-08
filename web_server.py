@@ -6,6 +6,7 @@ Handles captive portal, DNS server, and configuration web interface
 import socket
 from constants import DNS_PORT
 from config_manager import save_config, save_mqtt_config
+from ota_handler import save_ota_config
 
 
 def setup_dns_server():
@@ -167,12 +168,30 @@ def web_page():
             
             <label>MQTT Password (optional)</label>
             <input type="password" name="mqtt_pass" placeholder="Leave blank if not required">
-            
+
+            <h2>OTA Update Settings</h2>
+            <label>
+                <input type="checkbox" name="ota_enabled" value="1" style="width: auto; margin-right: 8px;">
+                Enable OTA Updates
+            </label>
+
+            <label>OTA Server URL</label>
+            <input type="text" name="ota_url" placeholder="http://your-server.com/firmware">
+
+            <label>
+                <input type="checkbox" name="ota_boot_check" value="1" checked style="width: auto; margin-right: 8px;">
+                Check for updates on boot
+            </label>
+
+            <label>
+                <input type="checkbox" name="ota_auto_update" value="1" checked style="width: auto; margin-right: 8px;">
+                Automatically apply updates
+            </label>
+
             <button type="submit">Save & Connect</button>
         </form>
         <div class="info">
-            * Required fields. MQTT settings are optional and will use defaults if not specified.
-        </div>
+            * Required fields. MQTT and OTA settings are optional.
     </div>
 </body>
 </html>"""
@@ -285,10 +304,20 @@ def handle_web_request(server_socket):
                         topic = params.get('topic', 'esp32/test')
                         mqtt_user = params.get('mqtt_user', '')
                         mqtt_pass = params.get('mqtt_pass', '')
-                        
+
                         print(f'Received MQTT config - Broker: {broker}:{port}')
                         save_mqtt_config(broker, port, topic, mqtt_user, mqtt_pass)
-                        
+
+                        # Save OTA config
+                        ota_config = {
+                            'enabled': 'ota_enabled' in params,
+                            'server_url': params.get('ota_url', ''),
+                            'check_on_boot': 'ota_boot_check' in params,
+                            'auto_update': 'ota_auto_update' in params
+                        }
+                        print(f'Received OTA config - Enabled: {ota_config["enabled"]}, URL: {ota_config["server_url"]}')
+                        save_ota_config(ota_config)
+
                         response = 'HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n'
                         response += success_page()
                         cl.send(response)
