@@ -74,6 +74,7 @@ No automated test framework. Debug via:
 - `{topic}/ota/status` - Request OTA status
 
 **Published (events):** `{topic}/heartbeat`, `{topic}/button/1`, `{topic}/button/2`, `{topic}/button/3`
+- Heartbeat: `{"device": "...", "status": "alive", "version": "1.0.0", "uptime": 123}`
 
 **Published (OTA responses):** `{topic}/ota/check/response`, `{topic}/ota/update/response`, `{topic}/ota/status/response`
 
