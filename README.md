@@ -180,7 +180,7 @@ All topics are prefixed with the base topic configured during setup (default: `e
 
 | Topic | Description | Payload |
 |-------|-------------|---------|
-| `{topic}/heartbeat` | Status every 60s | `{"device": "...", "status": "alive", "uptime": 123}` |
+| `{topic}/heartbeat` | Status every 60s | `{"device": "...", "status": "alive", "version": "1.0.0", "uptime": 123}` |
 | `{topic}/button/1` | Short press | `{"device": "...", "button": "1", "uptime": 123}` |
 | `{topic}/button/2` | Long press | `{"device": "...", "button": "2", "uptime": 123}` |
 | `{topic}/button/3` | Very long press | `{"device": "...", "button": "3", "uptime": 123}` |
