@@ -131,12 +131,13 @@ def mqtt_publish_button_press(button_type, client, config):
         client: MQTT client instance
         config: MQTT configuration dict
     """
-    heartbeat_msg = json.dumps({
+    msg = json.dumps({
         'device': MQTT_CLIENT_ID,
         'button': button_type,
+        'version': VERSION,
         'uptime': time.ticks_ms() // 1000
     })
-    client.publish(config['topic'] + f'/button/{button_type}', heartbeat_msg)
+    client.publish(config['topic'] + f'/button/{button_type}', msg)
     print(f'Button press sent: {time.ticks_ms()}')
 
 
