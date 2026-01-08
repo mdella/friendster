@@ -68,7 +68,14 @@ No automated test framework. Debug via:
 - `{topic}/ring/pulse` - Pulsing brightness
 - `{topic}/ring/reset` - Reset to default
 
+**Subscribed (OTA control):**
+- `{topic}/ota/check` - Trigger update check
+- `{topic}/ota/update` - Apply available update
+- `{topic}/ota/status` - Request OTA status
+
 **Published (events):** `{topic}/heartbeat`, `{topic}/button/1`, `{topic}/button/2`, `{topic}/button/3`
+
+**Published (OTA responses):** `{topic}/ota/check/response`, `{topic}/ota/update/response`, `{topic}/ota/status/response`
 
 **Payload formats:**
 - Simple: `"red"` (color name)
