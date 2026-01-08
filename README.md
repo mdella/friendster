@@ -153,6 +153,8 @@ All topics are prefixed with the base topic configured during setup (default: `e
 
 ### Subscribed Topics (Commands)
 
+**LED Ring Control:**
+
 | Topic | Description | Payload |
 |-------|-------------|---------|
 | `{topic}/ring/chase` | Chase animation | Color string or JSON |
@@ -164,7 +166,17 @@ All topics are prefixed with the base topic configured during setup (default: `e
 | `{topic}/ring/pulse` | Pulsing brightness | Color string or JSON |
 | `{topic}/ring/reset` | Reset to default | (none) |
 
+**OTA Control:**
+
+| Topic | Description | Payload |
+|-------|-------------|---------|
+| `{topic}/ota/check` | Trigger update check | (none) |
+| `{topic}/ota/update` | Apply available update | (none) |
+| `{topic}/ota/status` | Request OTA status | (none) |
+
 ### Published Topics (Events)
+
+**Device Events:**
 
 | Topic | Description | Payload |
 |-------|-------------|---------|
@@ -172,6 +184,14 @@ All topics are prefixed with the base topic configured during setup (default: `e
 | `{topic}/button/1` | Short press | `{"device": "...", "button": "1", "uptime": 123}` |
 | `{topic}/button/2` | Long press | `{"device": "...", "button": "2", "uptime": 123}` |
 | `{topic}/button/3` | Very long press | `{"device": "...", "button": "3", "uptime": 123}` |
+
+**OTA Responses:**
+
+| Topic | Description | Payload |
+|-------|-------------|---------|
+| `{topic}/ota/check/response` | Update check result | `{"device": "...", "available": true, "current_version": "1.0.0", "new_version": "1.0.1"}` |
+| `{topic}/ota/update/response` | Update status | `{"device": "...", "status": "starting", "new_version": "1.0.1"}` |
+| `{topic}/ota/status/response` | Current OTA config | `{"device": "...", "enabled": true, "current_version": "1.0.0", "next_check_in_hours": 23.5}` |
 
 ### Command Payload Formats
 
@@ -237,6 +257,18 @@ mosquitto_pub -t "esp32/test/ring/rainbow" -m '{"speed": 30}'
 
 # Reset to default
 mosquitto_pub -t "esp32/test/ring/reset" -m ""
+
+# OTA: Check for updates
+mosquitto_pub -t "esp32/test/ota/check" -m ""
+
+# OTA: Apply update
+mosquitto_pub -t "esp32/test/ota/update" -m ""
+
+# OTA: Get status
+mosquitto_pub -t "esp32/test/ota/status" -m ""
+
+# Subscribe to OTA responses
+mosquitto_sub -t "esp32/test/ota/+/response"
 ```
 
 ## OTA Updates
