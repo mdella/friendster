@@ -20,7 +20,8 @@ from config_manager import load_config, load_mqtt_config
 from mqtt_handler import (
     connect_to_mqtt,
     mqtt_callback,
-    set_ring
+    set_ring,
+    set_mqtt_client
 )
 from wifi_manager import connect_to_wifi, start_ap_mode, is_wifi_connected
 from web_server import (
@@ -85,10 +86,13 @@ def main():
             if mqtt_client:
                 # Set callback for incoming messages
                 mqtt_client.set_callback(mqtt_callback)
-                
-                # Subscribe to ring command topics
+
+                # Pass MQTT client reference to handler for response publishing
+                set_mqtt_client(mqtt_client, mqtt_config)
+
+                # Subscribe to command topics
                 base_topic = mqtt_config['topic']
-                ring_topics = [
+                topics = [
                     f'{base_topic}/ring/chase',
                     f'{base_topic}/ring/static',
                     f'{base_topic}/ring/flash',
@@ -97,11 +101,14 @@ def main():
                     f'{base_topic}/ring/rainbow',
                     f'{base_topic}/ring/pulse',
                     f'{base_topic}/ring/reset',
+                    f'{base_topic}/ota/check',
+                    f'{base_topic}/ota/update',
+                    f'{base_topic}/ota/status',
                     f'{base_topic}/command',
                     f'{base_topic}/button/#'
                 ]
-                
-                for topic in ring_topics:
+
+                for topic in topics:
                     mqtt_client.subscribe(topic)
                     print(f'Subscribed to: {topic}')
                       

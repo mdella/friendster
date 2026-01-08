@@ -7,6 +7,7 @@ import json
 import time
 from umqtt.simple import MQTTClient
 from constants import MQTT_CLIENT_ID, MQTT_KEEPALIVE
+from ota_handler import check_for_updates, apply_update, get_ota_status
 
 
 # Module-level variables (to be set by main)
@@ -21,6 +22,15 @@ def set_ring(ring_instance):
     """
     global ring
     ring = ring_instance
+
+
+def set_mqtt_client(client, config):
+    """Set the MQTT client and config for publishing responses.
+    Call this from main.py after connecting to MQTT.
+    """
+    global mqtt_client, mqtt_config
+    mqtt_client = client
+    mqtt_config = config
 
 
 def connect_to_mqtt(config):
@@ -97,6 +107,18 @@ def mqtt_callback(topic, msg):
                         ring_reset()
                     case _:
                         print(f'Unknown ring command: {command}')
+
+            # Handle OTA commands
+            elif 'ota' in topic_str:
+                match command:
+                    case 'check':
+                        ota_check(msg_str)
+                    case 'update':
+                        ota_update(msg_str)
+                    case 'status':
+                        ota_status(msg_str)
+                    case _:
+                        print(f'Unknown OTA command: {command}')
     except Exception as e:
         print(f'MQTT callback error: {e}')
 
@@ -343,3 +365,70 @@ def ring_pulse(payload):
     ring.set_mode('pulse')
 
 
+# OTA command handlers
+def ota_check(payload):
+    """Check for OTA updates and publish result.
+
+    Payload: ignored (can be empty)
+    """
+    print('[OTA] MQTT triggered update check')
+    update_info = check_for_updates(force=True)
+
+    if update_info:
+        result = {
+            'device': MQTT_CLIENT_ID,
+            'available': update_info.get('available', False),
+            'current_version': update_info.get('current_version', '0.0.0'),
+            'new_version': update_info.get('new_version', '0.0.0')
+        }
+        print(f'[OTA] Check result: {result}')
+        _publish_ota_response('check', result)
+    else:
+        _publish_ota_response('check', {
+            'device': MQTT_CLIENT_ID,
+            'error': 'Check failed or OTA disabled'
+        })
+
+
+def ota_update(payload):
+    """Apply OTA update if available.
+
+    Payload: ignored (can be empty)
+    """
+    print('[OTA] MQTT triggered update apply')
+    update_info = check_for_updates(force=True)
+
+    if update_info and update_info.get('available', False):
+        _publish_ota_response('update', {
+            'device': MQTT_CLIENT_ID,
+            'status': 'starting',
+            'new_version': update_info.get('new_version', '0.0.0')
+        })
+        # This will restart the device if successful
+        apply_update(update_info)
+    else:
+        _publish_ota_response('update', {
+            'device': MQTT_CLIENT_ID,
+            'status': 'no_update',
+            'message': 'No update available'
+        })
+
+
+def ota_status(payload):
+    """Publish current OTA status.
+
+    Payload: ignored (can be empty)
+    """
+    print('[OTA] MQTT requested status')
+    status = get_ota_status()
+    status['device'] = MQTT_CLIENT_ID
+    _publish_ota_response('status', status)
+
+
+def _publish_ota_response(command, data):
+    """Publish OTA response to MQTT."""
+    global mqtt_client, mqtt_config
+    if mqtt_client and mqtt_config:
+        topic = mqtt_config['topic'] + f'/ota/{command}/response'
+        mqtt_client.publish(topic, json.dumps(data))
+        print(f'[OTA] Published response to {topic}')
