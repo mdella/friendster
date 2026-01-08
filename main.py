@@ -7,7 +7,7 @@ import machine
 import time
 import json
 
-from constants import MAX_RETRIES, MQTT_CLIENT_ID
+from constants import MAX_RETRIES, MQTT_CLIENT_ID, VERSION
 from led_ring import LEDRing
 from button_handler import (
     setup_button,
@@ -151,6 +151,7 @@ def main():
                             heartbeat_msg = json.dumps({
                                 'device': MQTT_CLIENT_ID,
                                 'status': 'alive',
+                                'version': VERSION,
                                 'uptime': time.ticks_ms() // 1000
                             })
                             mqtt_client.publish(mqtt_config['topic'] + '/heartbeat', heartbeat_msg)
