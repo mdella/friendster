@@ -6,7 +6,7 @@ Handles MQTT connection, message callbacks, and button press events
 import json
 import time
 from umqtt.simple import MQTTClient
-from constants import MQTT_CLIENT_ID, MQTT_KEEPALIVE
+from constants import MQTT_CLIENT_ID, MQTT_KEEPALIVE, VERSION
 from ota_handler import check_for_updates, apply_update, get_ota_status
 
 
@@ -58,6 +58,7 @@ def connect_to_mqtt(config):
         test_message = json.dumps({
             'device': MQTT_CLIENT_ID,
             'status': 'online',
+            'version': VERSION,
             'message': 'ESP32 connected successfully',
             'timestamp': time.time()
         })
