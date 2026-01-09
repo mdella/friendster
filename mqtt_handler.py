@@ -431,6 +431,7 @@ def _publish_ota_response(command, data):
     """Publish OTA response to MQTT."""
     global mqtt_client, mqtt_config
     if mqtt_client and mqtt_config:
+        data['version'] = VERSION
         topic = mqtt_config['topic'] + f'/ota/{command}/response'
         mqtt_client.publish(topic, json.dumps(data))
         print(f'[OTA] Published response to {topic}')
